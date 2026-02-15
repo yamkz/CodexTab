@@ -58,6 +58,7 @@
     state.lastUrl = window.location.href;
     state.threadId = null;
     state.pageContext = null;
+    refreshPageCard();
     if (state.dom?.messages) {
       appendSystemMessage("ページが切り替わったため、会話をリセットしました。");
     }
@@ -309,6 +310,92 @@
           gap: 8px;
         }
 
+        .ct-page-card {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: #3a3a3f;
+          border-radius: 18px;
+          padding: 10px 12px;
+          width: fit-content;
+          max-width: 100%;
+          position: relative;
+        }
+
+        .ct-page-card.hidden {
+          display: none;
+        }
+
+        .ct-page-favicon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          object-fit: cover;
+          flex-shrink: 0;
+          background: #0f0f12;
+        }
+
+        .ct-page-meta {
+          min-width: 0;
+          max-width: 230px;
+        }
+
+        .ct-page-title {
+          margin: 0;
+          color: #f5f5f7;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.3;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .ct-page-host {
+          margin: 2px 0 0;
+          color: #b9b9c0;
+          font-size: 12px;
+          line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .ct-page-off {
+          border: 1px solid #34343d;
+          border-radius: 999px;
+          background: #19191d;
+          color: #c8c8cf;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 6px 10px;
+          cursor: pointer;
+          width: fit-content;
+          max-width: 100%;
+        }
+
+        .ct-page-off.hidden {
+          display: none;
+        }
+
+        .ct-page-clear {
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          width: 28px;
+          height: 28px;
+          border: 1px solid #4e4e57;
+          border-radius: 999px;
+          background: #53535a;
+          color: #f3f3f7;
+          font-size: 18px;
+          line-height: 1;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          padding: 0;
+        }
+
         .ct-input {
           width: 100%;
           min-height: 90px;
@@ -383,10 +470,6 @@
           white-space: nowrap;
         }
 
-        .ct-select-page {
-          max-width: 142px;
-        }
-
         @media (max-width: 560px) {
           .ct-panel {
             width: calc(100vw - 8px);
@@ -414,6 +497,15 @@
           <div class="ct-messages" id="ct-messages"></div>
           <div class="ct-input-wrap">
             <div class="ct-composer">
+              <div class="ct-page-card" id="ct-page-card">
+                <img class="ct-page-favicon" id="ct-page-favicon" alt="" />
+                <div class="ct-page-meta">
+                  <p class="ct-page-title" id="ct-page-title">Loading...</p>
+                  <p class="ct-page-host" id="ct-page-host">-</p>
+                </div>
+                <button class="ct-page-clear" id="ct-page-clear" aria-label="ページ読み取りをオフ">×</button>
+              </div>
+              <button class="ct-page-off hidden" id="ct-page-off">ページ読み取りを有効化</button>
               <textarea class="ct-input" id="ct-input" placeholder="このページについてCodexに質問する"></textarea>
               <div class="ct-toolbar">
                 <div class="ct-toolbar-left">
@@ -426,10 +518,6 @@
                     <option value="low">Low</option>
                     <option value="medium" selected>Medium</option>
                     <option value="high">High</option>
-                  </select>
-                  <select class="ct-select ct-select-page" id="ct-page-context" aria-label="ページ読み込み">
-                    <option value="on" selected>ページ: あり</option>
-                    <option value="off">ページ: なし</option>
                   </select>
                 </div>
                 <button class="ct-send" id="ct-send">送信 ⌘↩</button>
@@ -453,7 +541,12 @@
       sendButton: shadow.getElementById("ct-send"),
       modelSelect: shadow.getElementById("ct-model"),
       reasoningSelect: shadow.getElementById("ct-reasoning"),
-      pageContextSelect: shadow.getElementById("ct-page-context")
+      pageCard: shadow.getElementById("ct-page-card"),
+      pageFavicon: shadow.getElementById("ct-page-favicon"),
+      pageTitle: shadow.getElementById("ct-page-title"),
+      pageHost: shadow.getElementById("ct-page-host"),
+      pageClearButton: shadow.getElementById("ct-page-clear"),
+      pageOffButton: shadow.getElementById("ct-page-off")
     };
 
     dom.backdrop.addEventListener("click", () => closeSidebar());
@@ -464,8 +557,14 @@
     dom.shell.addEventListener("keypress", trapSidebarKeyboardEvents);
     dom.shell.addEventListener("keyup", trapSidebarKeyboardEvents);
 
-    dom.pageContextSelect.addEventListener("change", (event) => {
-      state.pageContextEnabled = String(event.target?.value || "on") !== "off";
+    dom.pageClearButton.addEventListener("click", () => {
+      state.pageContextEnabled = false;
+      applySettingsToDom();
+      saveSettings();
+    });
+
+    dom.pageOffButton.addEventListener("click", () => {
+      state.pageContextEnabled = true;
       applySettingsToDom();
       saveSettings();
     });
@@ -522,6 +621,7 @@
     state.open = true;
     state.dom.shell.classList.add("open");
     state.dom.shell.setAttribute("aria-hidden", "false");
+    refreshPageCard();
     applyPanelWidth();
     state.dom.input.focus();
   }
@@ -798,13 +898,15 @@
       return;
     }
 
-    state.dom.pageContextSelect.value = state.pageContextEnabled ? "on" : "off";
-
     const modelValue = state.selectedModel || "";
     const modelExists = Array.from(state.dom.modelSelect.options).some((option) => option.value === modelValue);
     state.dom.modelSelect.value = modelExists ? modelValue : "";
 
     state.dom.reasoningSelect.value = normalizeReasoningEffort(state.reasoningEffort);
+    state.dom.input.placeholder = state.pageContextEnabled ? "このページについてCodexに質問する" : "Codexに質問する";
+    state.dom.pageCard.classList.toggle("hidden", !state.pageContextEnabled);
+    state.dom.pageOffButton.classList.toggle("hidden", state.pageContextEnabled);
+    refreshPageCard();
     applyPanelWidth();
   }
 
@@ -867,6 +969,63 @@
 
     window.addEventListener("mousemove", onMove, true);
     window.addEventListener("mouseup", onUp, true);
+  }
+
+  function refreshPageCard() {
+    if (!state.dom || !state.pageContextEnabled) {
+      return;
+    }
+
+    const data = getPageCardData();
+    state.dom.pageTitle.textContent = data.title;
+    state.dom.pageHost.textContent = data.host;
+    state.dom.pageFavicon.src = data.faviconUrl;
+    state.dom.pageFavicon.alt = `${data.title} favicon`;
+  }
+
+  function getPageCardData() {
+    const title = truncate(normalizeText(document.title || "") || "Untitled", 60);
+    let host = "";
+    try {
+      host = window.location.hostname || "";
+    } catch (_error) {
+      host = "";
+    }
+    const faviconUrl = resolveFaviconUrl();
+
+    return {
+      title,
+      host: host || "unknown host",
+      faviconUrl
+    };
+  }
+
+  function resolveFaviconUrl() {
+    const iconSelectors = [
+      "link[rel='icon']",
+      "link[rel='shortcut icon']",
+      "link[rel='apple-touch-icon']",
+      "link[rel='mask-icon']"
+    ];
+
+    for (const selector of iconSelectors) {
+      const node = document.querySelector(selector);
+      const href = String(node?.getAttribute?.("href") || "").trim();
+      if (!href) {
+        continue;
+      }
+      try {
+        return new URL(href, window.location.href).toString();
+      } catch (_error) {
+        // try next candidate
+      }
+    }
+
+    try {
+      return `${window.location.origin}/favicon.ico`;
+    } catch (_error) {
+      return "";
+    }
   }
 
   function renderMarkdown(markdownText) {
