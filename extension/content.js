@@ -295,7 +295,7 @@
         }
 
         .ct-input-wrap {
-          padding: 12px;
+          padding: 8px;
           border-top: 0;
           background: #101012;
           overflow: hidden;
@@ -303,20 +303,20 @@
 
         .ct-composer {
           border: 1px solid #2c2c34;
-          border-radius: 24px;
-          padding: 12px 12px 10px;
+          border-radius: 17px;
+          padding: 8px 8px 7px;
           background: #141418;
           display: grid;
-          gap: 8px;
+          gap: 6px;
         }
 
         .ct-page-card {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 7px;
           background: #3a3a3f;
-          border-radius: 18px;
-          padding: 10px 12px;
+          border-radius: 13px;
+          padding: 7px 8px;
           width: fit-content;
           max-width: 100%;
           position: relative;
@@ -327,9 +327,9 @@
         }
 
         .ct-page-favicon {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
           object-fit: cover;
           flex-shrink: 0;
           background: #0f0f12;
@@ -337,13 +337,13 @@
 
         .ct-page-meta {
           min-width: 0;
-          max-width: 230px;
+          max-width: 165px;
         }
 
         .ct-page-title {
           margin: 0;
           color: #f5f5f7;
-          font-size: 14px;
+          font-size: 10px;
           font-weight: 700;
           line-height: 1.3;
           white-space: nowrap;
@@ -352,9 +352,9 @@
         }
 
         .ct-page-host {
-          margin: 2px 0 0;
+          margin: 1px 0 0;
           color: #b9b9c0;
-          font-size: 12px;
+          font-size: 9px;
           line-height: 1.2;
           white-space: nowrap;
           overflow: hidden;
@@ -366,9 +366,9 @@
           border-radius: 999px;
           background: #19191d;
           color: #c8c8cf;
-          font-size: 12px;
+          font-size: 9px;
           font-weight: 600;
-          padding: 6px 10px;
+          padding: 4px 7px;
           cursor: pointer;
           width: fit-content;
           max-width: 100%;
@@ -380,15 +380,15 @@
 
         .ct-page-clear {
           position: absolute;
-          top: -10px;
-          right: -10px;
-          width: 28px;
-          height: 28px;
+          top: -7px;
+          right: -7px;
+          width: 20px;
+          height: 20px;
           border: 1px solid #4e4e57;
           border-radius: 999px;
           background: #53535a;
           color: #f3f3f7;
-          font-size: 18px;
+          font-size: 13px;
           line-height: 1;
           cursor: pointer;
           display: grid;
@@ -398,14 +398,14 @@
 
         .ct-input {
           width: 100%;
-          min-height: 90px;
-          max-height: 220px;
+          min-height: 63px;
+          max-height: 154px;
           resize: vertical;
           border: 0;
-          border-radius: 12px;
-          padding: 6px 2px;
+          border-radius: 8px;
+          padding: 4px 1px;
           font: inherit;
-          font-size: 16px;
+          font-size: 11px;
           line-height: 1.4;
           outline: none;
           color: #f5f5f7;
@@ -421,32 +421,32 @@
           display: grid;
           grid-template-columns: minmax(0, 1fr) auto;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
 
         .ct-toolbar-left {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           min-width: 0;
           overflow-x: auto;
           overflow-y: hidden;
           scrollbar-width: thin;
-          padding-bottom: 2px;
+          padding-bottom: 1px;
         }
 
         .ct-select {
           appearance: none;
           border: 1px solid #34343d;
           border-radius: 999px;
-          padding: 7px 12px;
+          padding: 5px 8px;
           background: #17171c;
           color: #d9d9e0;
           font: inherit;
-          font-size: 14px;
+          font-size: 10px;
           line-height: 1.3;
-          min-width: 94px;
-          max-width: 154px;
+          min-width: 66px;
+          max-width: 108px;
           flex: 0 1 auto;
         }
 
@@ -460,13 +460,13 @@
           border: 0;
           background: #f5f5f7;
           color: #111114;
-          padding: 8px 14px;
+          padding: 6px 10px;
           border-radius: 999px;
-          font-size: 13px;
+          font-size: 9px;
           font-weight: 700;
           cursor: pointer;
           flex-shrink: 0;
-          min-width: 60px;
+          min-width: 42px;
           white-space: nowrap;
         }
 
@@ -477,8 +477,8 @@
           }
 
           .ct-select {
-            min-width: 84px;
-            max-width: 128px;
+            min-width: 59px;
+            max-width: 90px;
           }
         }
 
