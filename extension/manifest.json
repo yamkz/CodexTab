@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "CodexTab Sidebar",
+  "description": "Open a Codex CLI chat sidebar with Command+E and page-aware context.",
+  "version": "1.0.0",
+  "permissions": [
+    "tabs",
+    "storage",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+E"
+      },
+      "description": "CodexTabサイドバーを開閉"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "CodexTab Sidebar"
+  }
+}

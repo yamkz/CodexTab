@@ -1,0 +1,3 @@
+.DS_Store
+.tmp/
+native-host/run-host.sh

@@ -1,0 +1,9 @@
+{
+  "name": "codextab",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "node scripts/lint-check.js",
+    "lint:fix": "node scripts/lint-check.js"
+  }
+}
