@@ -147,13 +147,14 @@ function callNative(payload) {
 
 function formatNativeHostError(error) {
   const raw = String(error?.message ?? error ?? "不明なエラー");
+  const extensionId = chrome.runtime.id;
 
   if (raw.includes("Specified native messaging host not found")) {
-    return "Native host が見つかりません。README の手順で scripts/install-native-host.sh --extension-id <ID> を実行してください。";
+    return `Native host が見つかりません。次を実行してください: ./scripts/install-native-host.sh --extension-id ${extensionId}`;
   }
 
   if (raw.includes("Access to the specified native messaging host is forbidden")) {
-    return "Native host は登録済みですが、この拡張IDが許可されていません。拡張IDを確認して install スクリプトを再実行してください。";
+    return `Native host の許可IDが一致していません。現在の拡張ID: ${extensionId}。次を実行してください: ./scripts/install-native-host.sh --extension-id ${extensionId}`;
   }
 
   return raw;

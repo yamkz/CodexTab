@@ -2,7 +2,6 @@
   const ROOT_ID = "codextab-root";
   const SETTINGS_KEY = "codextab-settings-v1";
   const DEFAULT_SETTINGS = {
-    includePageContextEachTurn: true,
     pageContextEnabled: true,
     selectedModel: "",
     reasoningEffort: "medium"
@@ -15,7 +14,6 @@
     threadId: null,
     pageContext: null,
     lastUrl: window.location.href,
-    includePageContextEachTurn: DEFAULT_SETTINGS.includePageContextEachTurn,
     pageContextEnabled: DEFAULT_SETTINGS.pageContextEnabled,
     selectedModel: DEFAULT_SETTINGS.selectedModel,
     reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
@@ -37,6 +35,10 @@
         return;
       }
 
+      if (eventIsFromSidebar(event)) {
+        return;
+      }
+
       if (isEditableTarget(event.target)) {
         return;
       }
@@ -48,6 +50,10 @@
     },
     true
   );
+
+  window.addEventListener("keydown", trapSidebarKeyboardEvents, true);
+  window.addEventListener("keypress", trapSidebarKeyboardEvents, true);
+  window.addEventListener("keyup", trapSidebarKeyboardEvents, true);
 
   setInterval(() => {
     if (window.location.href === state.lastUrl) {
@@ -83,7 +89,7 @@
           z-index: 2147483646;
           pointer-events: none;
           font-family: "SF Pro Text", "SF Pro Display", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
-          color: #1d1d1f;
+          color: #f5f5f7;
         }
 
         .ct-shell.open {
@@ -93,10 +99,9 @@
         .ct-backdrop {
           position: absolute;
           inset: 0;
-          background: rgba(16, 16, 18, 0.2);
+          background: rgba(0, 0, 0, 0.06);
           opacity: 0;
           transition: opacity 220ms ease;
-          backdrop-filter: blur(2px);
         }
 
         .ct-shell.open .ct-backdrop {
@@ -107,17 +112,17 @@
           position: absolute;
           top: 0;
           right: 0;
-          width: min(430px, 94vw);
+          width: 430px;
+          max-width: calc(100vw - 12px);
           height: 100%;
           display: grid;
           grid-template-rows: 1fr auto;
-          background: rgba(250, 250, 252, 0.96);
-          border-left: 1px solid #d7d7dc;
-          box-shadow: -18px 0 44px rgba(20, 20, 22, 0.16);
+          background: #111113;
+          border-left: 1px solid #2a2a2f;
+          box-shadow: -18px 0 44px rgba(10, 10, 12, 0.4);
           transform: translateX(36px);
           opacity: 0;
           transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease;
-          backdrop-filter: blur(16px);
         }
 
         .ct-shell.open .ct-panel {
@@ -129,9 +134,9 @@
           position: absolute;
           top: 10px;
           right: 10px;
-          border: 1px solid #d8d8dd;
-          background: rgba(255, 255, 255, 0.9);
-          color: #404044;
+          border: 1px solid #383840;
+          background: #1b1b20;
+          color: #a8a8b3;
           width: 28px;
           height: 28px;
           border-radius: 999px;
@@ -142,8 +147,8 @@
         }
 
         .ct-close:hover {
-          background: #ffffff;
-          color: #1d1d1f;
+          background: #25252b;
+          color: #f5f5f7;
         }
 
         .ct-messages {
@@ -152,6 +157,7 @@
           display: flex;
           flex-direction: column;
           gap: 10px;
+          min-height: 0;
         }
 
         .ct-msg {
@@ -166,16 +172,17 @@
 
         .ct-msg.user {
           margin-left: auto;
-          background: #1f1f22;
-          color: #ffffff;
+          background: #f5f5f7;
+          color: #1b1b20;
+          border: 1px solid #ffffff;
           border-bottom-right-radius: 4px;
         }
 
         .ct-msg.assistant {
           margin-right: auto;
-          background: #f3f3f5;
-          color: #1f1f22;
-          border: 1px solid #e3e3e8;
+          background: #1a1a1f;
+          color: #ffffff;
+          border: 1px solid #2f2f37;
           border-bottom-left-radius: 4px;
         }
 
@@ -194,7 +201,7 @@
         .ct-md h4 {
           margin: 0.2em 0 0.45em;
           line-height: 1.3;
-          color: #1f1f22;
+          color: #ffffff;
         }
 
         .ct-md h1 { font-size: 1.3em; }
@@ -220,7 +227,7 @@
           margin: 0.55em 0;
           padding: 10px;
           border-radius: 9px;
-          background: #17171a;
+          background: #080809;
           color: #f8f8fa;
           overflow: auto;
           font-size: 12px;
@@ -228,8 +235,8 @@
         }
 
         .ct-md code {
-          background: #e8e8ed;
-          color: #1f1f22;
+          background: #2b2b33;
+          color: #f4f4f7;
           border-radius: 6px;
           padding: 1px 4px;
           font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -253,15 +260,15 @@
 
         .ct-md hr {
           border: 0;
-          border-top: 1px solid #d8d8de;
+          border-top: 1px solid #3a3a44;
           margin: 0.8em 0;
         }
 
         .ct-msg.system {
           margin: 0 auto;
-          background: #efeff4;
-          color: #55555d;
-          border: 1px solid #dfdfe6;
+          background: #1d1d22;
+          color: #b5b5c0;
+          border: 1px solid #31313a;
           font-size: 12px;
           text-align: center;
         }
@@ -273,100 +280,115 @@
 
         .ct-input-wrap {
           padding: 12px;
-          border-top: 1px solid #dedee4;
-          background: rgba(249, 249, 251, 0.94);
-          display: grid;
-          gap: 10px;
+          border-top: 1px solid #2a2a31;
+          background: #101012;
+          overflow: hidden;
         }
 
-        .ct-settings {
+        .ct-composer {
+          border: 1px solid #2c2c34;
+          border-radius: 24px;
+          padding: 12px 12px 10px;
+          background: #141418;
           display: grid;
-          grid-template-columns: 1fr 1fr;
           gap: 8px;
-        }
-
-        .ct-field {
-          display: grid;
-          gap: 4px;
-          font-size: 11px;
-          color: #66666f;
-        }
-
-        .ct-select {
-          appearance: none;
-          border: 1px solid #d4d4dc;
-          border-radius: 9px;
-          padding: 7px 9px;
-          background: #ffffff;
-          color: #1f1f22;
-          font: inherit;
-          font-size: 12px;
-          line-height: 1.3;
-        }
-
-        .ct-select:focus {
-          outline: none;
-          border-color: #a8a8b2;
-          box-shadow: 0 0 0 2px rgba(120, 120, 128, 0.14);
         }
 
         .ct-input {
           width: 100%;
-          min-height: 78px;
-          max-height: 190px;
+          min-height: 90px;
+          max-height: 220px;
           resize: vertical;
-          border: 1px solid #d4d4dc;
+          border: 0;
           border-radius: 12px;
-          padding: 10px;
+          padding: 6px 2px;
           font: inherit;
-          font-size: 13px;
-          line-height: 1.45;
+          font-size: 16px;
+          line-height: 1.4;
           outline: none;
-          color: #1f1f22;
-          background: #ffffff;
+          color: #f5f5f7;
+          background: transparent;
           box-sizing: border-box;
         }
 
-        .ct-input:focus {
-          border-color: #a8a8b2;
-          box-shadow: 0 0 0 3px rgba(120, 120, 128, 0.15);
+        .ct-input::placeholder {
+          color: #7f7f88;
         }
 
-        .ct-controls {
-          display: flex;
+        .ct-toolbar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
           align-items: center;
-          justify-content: space-between;
           gap: 8px;
         }
 
-        .ct-checkbox {
-          font-size: 12px;
-          color: #42424a;
-          display: inline-flex;
+        .ct-toolbar-left {
+          display: flex;
           align-items: center;
-          gap: 6px;
-          user-select: none;
+          gap: 8px;
+          min-width: 0;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: thin;
+          padding-bottom: 2px;
         }
 
-        .ct-checkbox.disabled {
-          opacity: 0.55;
+        .ct-select {
+          appearance: none;
+          border: 1px solid #34343d;
+          border-radius: 999px;
+          padding: 7px 12px;
+          background: #17171c;
+          color: #d9d9e0;
+          font: inherit;
+          font-size: 14px;
+          line-height: 1.3;
+          min-width: 94px;
+          max-width: 154px;
+          flex: 0 1 auto;
+        }
+
+        .ct-select:focus {
+          outline: none;
+          border-color: #5b5b66;
+          box-shadow: 0 0 0 2px rgba(120, 120, 128, 0.2);
         }
 
         .ct-send {
           border: 0;
-          background: #1d1d1f;
-          color: #ffffff;
+          background: #f5f5f7;
+          color: #111114;
           padding: 8px 14px;
-          border-radius: 10px;
+          border-radius: 999px;
           font-size: 13px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
+          flex-shrink: 0;
+          min-width: 60px;
+          white-space: nowrap;
+        }
+
+        .ct-select-page {
+          max-width: 142px;
+        }
+
+        @media (max-width: 560px) {
+          .ct-panel {
+            width: calc(100vw - 8px);
+            max-width: calc(100vw - 8px);
+          }
+
+          .ct-select {
+            min-width: 84px;
+            max-width: 128px;
+          }
         }
 
         .ct-send:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
+
       </style>
 
       <div class="ct-shell" id="ct-shell" aria-hidden="true">
@@ -375,38 +397,27 @@
           <button class="ct-close" id="ct-close" aria-label="Close">×</button>
           <div class="ct-messages" id="ct-messages"></div>
           <div class="ct-input-wrap">
-            <div class="ct-settings">
-              <label class="ct-field">
-                <span>AIモデル</span>
-                <select class="ct-select" id="ct-model">
-                  <option value="">既定（自動）</option>
-                  <option value="gpt-5.2-codex">gpt-5.2-codex</option>
-                  <option value="gpt-5-codex">gpt-5-codex</option>
-                </select>
-              </label>
-              <label class="ct-field">
-                <span>思考の量</span>
-                <select class="ct-select" id="ct-reasoning">
-                  <option value="low">low</option>
-                  <option value="medium" selected>medium</option>
-                  <option value="high">high</option>
-                </select>
-              </label>
-              <label class="ct-field">
-                <span>ページ読み込み</span>
-                <select class="ct-select" id="ct-page-context">
-                  <option value="on" selected>あり</option>
-                  <option value="off">なし</option>
-                </select>
-              </label>
-            </div>
-            <textarea class="ct-input" id="ct-input" placeholder="メッセージを入力（Enterで送信 / Shift+Enterで改行）"></textarea>
-            <div class="ct-controls">
-              <label class="ct-checkbox" id="ct-context-label">
-                <input type="checkbox" id="ct-context" checked />
-                毎ターンページ情報を含める
-              </label>
-              <button class="ct-send" id="ct-send">送信</button>
+            <div class="ct-composer">
+              <textarea class="ct-input" id="ct-input" placeholder="このページについてCodexに質問する"></textarea>
+              <div class="ct-toolbar">
+                <div class="ct-toolbar-left">
+                  <select class="ct-select" id="ct-model" aria-label="AIモデル">
+                    <option value="">Auto model</option>
+                    <option value="gpt-5.2-codex">gpt-5.2-codex</option>
+                    <option value="gpt-5-codex">gpt-5-codex</option>
+                  </select>
+                  <select class="ct-select" id="ct-reasoning" aria-label="思考の量">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                  <select class="ct-select ct-select-page" id="ct-page-context" aria-label="ページ読み込み">
+                    <option value="on" selected>ページ: あり</option>
+                    <option value="off">ページ: なし</option>
+                  </select>
+                </div>
+                <button class="ct-send" id="ct-send">送信</button>
+              </div>
             </div>
           </div>
         </aside>
@@ -422,8 +433,6 @@
       messages: shadow.getElementById("ct-messages"),
       input: shadow.getElementById("ct-input"),
       sendButton: shadow.getElementById("ct-send"),
-      contextCheckbox: shadow.getElementById("ct-context"),
-      contextLabel: shadow.getElementById("ct-context-label"),
       modelSelect: shadow.getElementById("ct-model"),
       reasoningSelect: shadow.getElementById("ct-reasoning"),
       pageContextSelect: shadow.getElementById("ct-page-context")
@@ -432,11 +441,6 @@
     dom.backdrop.addEventListener("click", () => closeSidebar());
     dom.closeButton.addEventListener("click", () => closeSidebar());
     dom.sendButton.addEventListener("click", () => void sendMessage());
-
-    dom.contextCheckbox.addEventListener("change", (event) => {
-      state.includePageContextEachTurn = Boolean(event.target?.checked);
-      saveSettings();
-    });
 
     dom.pageContextSelect.addEventListener("change", (event) => {
       state.pageContextEnabled = String(event.target?.value || "on") !== "off";
@@ -521,7 +525,7 @@
     state.dom.input.value = "";
 
     const pending = appendAssistantMessage("Thinking...", { pending: true });
-    const includePageContext = state.pageContextEnabled && (!state.threadId || state.includePageContextEachTurn);
+    const includePageContext = state.pageContextEnabled;
     const pageContext = includePageContext ? getPageContext() : null;
     state.pageContext = pageContext;
 
@@ -734,7 +738,6 @@
         return;
       }
 
-      state.includePageContextEachTurn = Boolean(value.includePageContextEachTurn ?? DEFAULT_SETTINGS.includePageContextEachTurn);
       state.pageContextEnabled = Boolean(value.pageContextEnabled ?? DEFAULT_SETTINGS.pageContextEnabled);
       state.selectedModel = normalizeModel(String(value.selectedModel ?? DEFAULT_SETTINGS.selectedModel));
       state.reasoningEffort = normalizeReasoningEffort(String(value.reasoningEffort ?? DEFAULT_SETTINGS.reasoningEffort));
@@ -749,7 +752,6 @@
     try {
       chrome.storage.local.set({
         [SETTINGS_KEY]: {
-          includePageContextEachTurn: state.includePageContextEachTurn,
           pageContextEnabled: state.pageContextEnabled,
           selectedModel: state.selectedModel,
           reasoningEffort: state.reasoningEffort
@@ -765,9 +767,6 @@
       return;
     }
 
-    state.dom.contextCheckbox.checked = state.includePageContextEachTurn;
-    state.dom.contextCheckbox.disabled = !state.pageContextEnabled;
-    state.dom.contextLabel.classList.toggle("disabled", !state.pageContextEnabled);
     state.dom.pageContextSelect.value = state.pageContextEnabled ? "on" : "off";
 
     const modelValue = state.selectedModel || "";
@@ -927,6 +926,25 @@
       .replace(/>/g, "&gt;")
       .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function eventIsFromSidebar(event) {
+    if (!state.dom || typeof event?.composedPath !== "function") {
+      return false;
+    }
+
+    return event.composedPath().includes(state.dom.shell);
+  }
+
+  function trapSidebarKeyboardEvents(event) {
+    if (!state.open || !eventIsFromSidebar(event)) {
+      return;
+    }
+
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === "function") {
+      event.stopImmediatePropagation();
+    }
   }
 
   function isEditableTarget(target) {

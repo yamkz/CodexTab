@@ -40,10 +40,13 @@ cd CodexTab
 
 ### 3) Native Host を登録
 
-> `EXTENSION_ID` は手順2でコピーしたID
+> `EXTENSION_ID` は手順2でコピーしたID  
+> 省略した場合は、固定ID `flganlpniflbkbgioedlbjmgbknmpkpc` を使用します。
 
 ```bash
 ./scripts/install-native-host.sh --extension-id EXTENSION_ID
+# または
+./scripts/install-native-host.sh
 ```
 
 ### 4) ショートカット確認
@@ -62,7 +65,7 @@ cd CodexTab
 
 - `Shift+Enter` で改行
 - `Escape` でサイドバーを閉じる
-- `毎ターンページ情報を含める` で毎ターン文脈添付を切替
+- `ページ読み込み: あり/なし` でページ文脈の添付を切替
 
 ## プロジェクト構成
 
@@ -84,6 +87,9 @@ cd CodexTab
 - Host not found と出る
   - 拡張IDを確認して `install-native-host.sh` を再実行
   - その後、拡張を再読み込み
+- `許可IDが一致していません` と出る
+  - エラーメッセージに表示された `現在の拡張ID` をそのまま使って再実行
+  - `./scripts/install-native-host.sh --extension-id <表示されたID>`
 - 応答しない
   - `codex --version`
   - `codex login`

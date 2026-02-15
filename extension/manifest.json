@@ -3,6 +3,7 @@
   "name": "CodexTab Sidebar",
   "description": "Open a Codex CLI chat sidebar with Command+E and page-aware context.",
   "version": "1.0.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArS81jyINAo/gGunwx9ttJmY47e+EnDpy50ezzFf+d73/cvbhtTdh0xAzVWatLDjrLD5cnpLGnc3twJyipwDWbzsnrqTbD6aMxWI9a7jBTOAzLY1FUKqiwN9yMOIMsWIDwaMBBs9iQVwOSvjUcLiy3Fq4oT5h4euKkk8olSlBwyQ1mO7aYJ7jISr7lwnyfUIeu21+FCNNw02BNhscHp2tpwfhweS0K+1Vz03Mmf93yEIS7zbH/7r80hvWAdBZwK3wCa6G5MEjO+YdBMeaMlTuM+v40MR1OcgRnOeGWL/+OkpqTsd+ISjxGBsJlfVtR1eXmf+PzZ6bZKGPNFvDTEWQmQIDAQAB",
   "permissions": [
     "tabs",
     "storage",
@@ -34,7 +35,7 @@
       "js": [
         "content.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ],
   "action": {

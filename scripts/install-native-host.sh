@@ -9,20 +9,31 @@ MANIFEST_PATH="${NATIVE_DIR}/${HOST_NAME}.json"
 LAUNCHER_PATH="${ROOT_DIR}/native-host/run-host.sh"
 HOST_JS_PATH="${ROOT_DIR}/native-host/host.js"
 EXTENSION_ID="${EXTENSION_ID:-}"
+DEFAULT_EXTENSION_ID="flganlpniflbkbgioedlbjmgbknmpkpc"
+LEGACY_EXTENSION_IDS=(
+  "pdnmhbopkjlmmfnaliekgedfigcimljl"
+  "ocifaefkejcimbdnjoaijldnihomclki"
+  "hjkphmilkkfpbapnafjbfokibpappmgn"
+  "fcaiohbanjnhkphdddlaccommlhdoacc"
+)
 
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/install-native-host.sh --extension-id <EXTENSION_ID>
+  ./scripts/install-native-host.sh [--extension-id <EXTENSION_ID>]
 
 Example:
   ./scripts/install-native-host.sh --extension-id abcdefghijklmnopqrstuvwxyzabcdef
+  ./scripts/install-native-host.sh
 
 How to get EXTENSION_ID:
   1) Open chrome://extensions
   2) Enable Developer mode
   3) Load unpacked "extension/" directory
   4) Copy the ID shown on the extension card
+
+If omitted, this script uses the stable unpacked ID:
+  flganlpniflbkbgioedlbjmgbknmpkpc
 USAGE
 }
 
@@ -45,9 +56,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${EXTENSION_ID}" ]]; then
-  echo "[ERROR] EXTENSION_ID is required." >&2
-  usage
-  exit 1
+  EXTENSION_ID="${DEFAULT_EXTENSION_ID}"
 fi
 
 if [[ ! "${EXTENSION_ID}" =~ ^[a-p]{32}$ ]]; then
@@ -77,14 +86,35 @@ LAUNCHER
 chmod +x "${LAUNCHER_PATH}"
 chmod +x "${HOST_JS_PATH}"
 
+ALLOWED_IDS=("${EXTENSION_ID}" "${DEFAULT_EXTENSION_ID}" "${LEGACY_EXTENSION_IDS[@]}")
+UNIQUE_IDS=()
+for id in "${ALLOWED_IDS[@]}"; do
+  found=0
+  for existing in "${UNIQUE_IDS[@]-}"; do
+    if [[ "${existing}" == "${id}" ]]; then
+      found=1
+      break
+    fi
+  done
+  if [[ "${found}" -eq 0 ]]; then
+    UNIQUE_IDS+=("${id}")
+  fi
+done
+
+ALLOWED_ORIGINS_JSON=""
+for id in "${UNIQUE_IDS[@]}"; do
+  ALLOWED_ORIGINS_JSON="${ALLOWED_ORIGINS_JSON}
+    \"chrome-extension://${id}/\","
+done
+ALLOWED_ORIGINS_JSON="$(printf "%s" "${ALLOWED_ORIGINS_JSON}" | sed '$ s/,$//')"
+
 cat > "${MANIFEST_PATH}" <<MANIFEST
 {
   "name": "${HOST_NAME}",
   "description": "CodexTab Native Host",
   "path": "${LAUNCHER_PATH}",
   "type": "stdio",
-  "allowed_origins": [
-    "chrome-extension://${EXTENSION_ID}/"
+  "allowed_origins": [${ALLOWED_ORIGINS_JSON}
   ]
 }
 MANIFEST
@@ -93,4 +123,4 @@ echo "[OK] Native host installed."
 echo "Manifest: ${MANIFEST_PATH}"
 echo "Codex: ${CODEX_PATH}"
 echo "Node : ${NODE_PATH}"
-echo "Allowed extension id: ${EXTENSION_ID}"
+echo "Allowed extension ids: ${UNIQUE_IDS[*]-}"
