@@ -1,5 +1,12 @@
 (() => {
   const ROOT_ID = "codextab-root";
+  const SETTINGS_KEY = "codextab-settings-v1";
+  const DEFAULT_SETTINGS = {
+    includePageContextEachTurn: true,
+    pageContextEnabled: true,
+    selectedModel: "",
+    reasoningEffort: "medium"
+  };
 
   const state = {
     mounted: false,
@@ -8,7 +15,10 @@
     threadId: null,
     pageContext: null,
     lastUrl: window.location.href,
-    includePageContextEachTurn: true,
+    includePageContextEachTurn: DEFAULT_SETTINGS.includePageContextEachTurn,
+    pageContextEnabled: DEFAULT_SETTINGS.pageContextEnabled,
+    selectedModel: DEFAULT_SETTINGS.selectedModel,
+    reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
     dom: null
   };
 
@@ -48,7 +58,7 @@
     state.threadId = null;
     state.pageContext = null;
     if (state.dom?.messages) {
-      appendSystemMessage("Page changed. Conversation context was reset.");
+      appendSystemMessage("ページが切り替わったため、会話をリセットしました。");
     }
   }, 1000);
 
@@ -72,8 +82,8 @@
           inset: 0;
           z-index: 2147483646;
           pointer-events: none;
-          font-family: "Manrope", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-          color: #131722;
+          font-family: "SF Pro Text", "SF Pro Display", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #1d1d1f;
         }
 
         .ct-shell.open {
@@ -83,9 +93,10 @@
         .ct-backdrop {
           position: absolute;
           inset: 0;
-          background: rgba(4, 9, 18, 0.22);
+          background: rgba(16, 16, 18, 0.2);
           opacity: 0;
           transition: opacity 220ms ease;
+          backdrop-filter: blur(2px);
         }
 
         .ct-shell.open .ct-backdrop {
@@ -99,14 +110,14 @@
           width: min(430px, 94vw);
           height: 100%;
           display: grid;
-          grid-template-rows: auto auto 1fr auto;
-          background: linear-gradient(180deg, #fdfefe 0%, #f4f8ff 100%);
-          border-left: 1px solid #dbe4f5;
-          box-shadow: -18px 0 44px rgba(13, 27, 50, 0.25);
-          transform: translateX(38px);
+          grid-template-rows: 1fr auto;
+          background: rgba(250, 250, 252, 0.96);
+          border-left: 1px solid #d7d7dc;
+          box-shadow: -18px 0 44px rgba(20, 20, 22, 0.16);
+          transform: translateX(36px);
           opacity: 0;
           transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease;
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(16px);
         }
 
         .ct-shell.open .ct-panel {
@@ -114,69 +125,30 @@
           opacity: 1;
         }
 
-        .ct-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 16px;
-          border-bottom: 1px solid #d7e2f2;
-          background: rgba(255, 255, 255, 0.75);
-        }
-
-        .ct-title {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 700;
-          letter-spacing: 0.2px;
-        }
-
         .ct-close {
-          border: 0;
-          background: #e9eef9;
-          color: #273145;
-          width: 32px;
-          height: 32px;
-          border-radius: 10px;
-          font-size: 18px;
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          border: 1px solid #d8d8dd;
+          background: rgba(255, 255, 255, 0.9);
+          color: #404044;
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          font-size: 16px;
           line-height: 1;
           cursor: pointer;
+          z-index: 2;
         }
 
         .ct-close:hover {
-          background: #dce6f9;
-        }
-
-        .ct-meta {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 6px;
-          padding: 10px 16px;
-          border-bottom: 1px solid #d7e2f2;
-          background: rgba(246, 250, 255, 0.9);
-        }
-
-        .ct-chip {
-          font-size: 12px;
-          color: #1d2840;
-          background: #eaf1ff;
-          border: 1px solid #d3e0ff;
-          padding: 5px 8px;
-          border-radius: 999px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .ct-chip.error {
-          background: #fff1f1;
-          border-color: #ffd1d1;
-          color: #7a1414;
+          background: #ffffff;
+          color: #1d1d1f;
         }
 
         .ct-messages {
           overflow: auto;
-          padding: 14px;
+          padding: 44px 14px 14px;
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -187,23 +159,23 @@
           padding: 10px 12px;
           border-radius: 12px;
           font-size: 13px;
-          line-height: 1.45;
+          line-height: 1.5;
           white-space: pre-wrap;
           word-break: break-word;
         }
 
         .ct-msg.user {
           margin-left: auto;
-          background: #1f6feb;
+          background: #1f1f22;
           color: #ffffff;
           border-bottom-right-radius: 4px;
         }
 
         .ct-msg.assistant {
           margin-right: auto;
-          background: #ffffff;
-          color: #0e1522;
-          border: 1px solid #d9e3f4;
+          background: #f3f3f5;
+          color: #1f1f22;
+          border: 1px solid #e3e3e8;
           border-bottom-left-radius: 4px;
         }
 
@@ -222,7 +194,7 @@
         .ct-md h4 {
           margin: 0.2em 0 0.45em;
           line-height: 1.3;
-          color: #0f1b34;
+          color: #1f1f22;
         }
 
         .ct-md h1 { font-size: 1.3em; }
@@ -248,16 +220,16 @@
           margin: 0.55em 0;
           padding: 10px;
           border-radius: 9px;
-          background: #0f1728;
-          color: #f8fbff;
+          background: #17171a;
+          color: #f8f8fa;
           overflow: auto;
           font-size: 12px;
           line-height: 1.45;
         }
 
         .ct-md code {
-          background: #edf2fb;
-          color: #0f2348;
+          background: #e8e8ed;
+          color: #1f1f22;
           border-radius: 6px;
           padding: 1px 4px;
           font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -281,15 +253,15 @@
 
         .ct-md hr {
           border: 0;
-          border-top: 1px solid #d7e0ef;
+          border-top: 1px solid #d8d8de;
           margin: 0.8em 0;
         }
 
         .ct-msg.system {
           margin: 0 auto;
-          background: #f0f4fc;
-          color: #324665;
-          border: 1px solid #d8e3f5;
+          background: #efeff4;
+          color: #55555d;
+          border: 1px solid #dfdfe6;
           font-size: 12px;
           text-align: center;
         }
@@ -301,32 +273,63 @@
 
         .ct-input-wrap {
           padding: 12px;
-          border-top: 1px solid #d7e2f2;
-          background: rgba(253, 254, 255, 0.95);
+          border-top: 1px solid #dedee4;
+          background: rgba(249, 249, 251, 0.94);
           display: grid;
+          gap: 10px;
+        }
+
+        .ct-settings {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
           gap: 8px;
+        }
+
+        .ct-field {
+          display: grid;
+          gap: 4px;
+          font-size: 11px;
+          color: #66666f;
+        }
+
+        .ct-select {
+          appearance: none;
+          border: 1px solid #d4d4dc;
+          border-radius: 9px;
+          padding: 7px 9px;
+          background: #ffffff;
+          color: #1f1f22;
+          font: inherit;
+          font-size: 12px;
+          line-height: 1.3;
+        }
+
+        .ct-select:focus {
+          outline: none;
+          border-color: #a8a8b2;
+          box-shadow: 0 0 0 2px rgba(120, 120, 128, 0.14);
         }
 
         .ct-input {
           width: 100%;
-          min-height: 76px;
-          max-height: 180px;
+          min-height: 78px;
+          max-height: 190px;
           resize: vertical;
-          border: 1px solid #ccdaef;
+          border: 1px solid #d4d4dc;
           border-radius: 12px;
           padding: 10px;
           font: inherit;
           font-size: 13px;
           line-height: 1.45;
           outline: none;
-          color: #13203a;
+          color: #1f1f22;
           background: #ffffff;
           box-sizing: border-box;
         }
 
         .ct-input:focus {
-          border-color: #4c86e9;
-          box-shadow: 0 0 0 3px rgba(76, 134, 233, 0.15);
+          border-color: #a8a8b2;
+          box-shadow: 0 0 0 3px rgba(120, 120, 128, 0.15);
         }
 
         .ct-controls {
@@ -338,16 +341,20 @@
 
         .ct-checkbox {
           font-size: 12px;
-          color: #273145;
+          color: #42424a;
           display: inline-flex;
           align-items: center;
           gap: 6px;
           user-select: none;
         }
 
+        .ct-checkbox.disabled {
+          opacity: 0.55;
+        }
+
         .ct-send {
           border: 0;
-          background: #1f6feb;
+          background: #1d1d1f;
           color: #ffffff;
           padding: 8px 14px;
           border-radius: 10px;
@@ -365,23 +372,41 @@
       <div class="ct-shell" id="ct-shell" aria-hidden="true">
         <div class="ct-backdrop" id="ct-backdrop"></div>
         <aside class="ct-panel" role="dialog" aria-label="CodexTab Chat Sidebar">
-          <header class="ct-header">
-            <h2 class="ct-title">CodexTab</h2>
-            <button class="ct-close" id="ct-close" aria-label="Close">×</button>
-          </header>
-          <div class="ct-meta">
-            <div class="ct-chip" id="ct-page-chip">Page: loading...</div>
-            <div class="ct-chip" id="ct-host-chip">Host: checking...</div>
-          </div>
+          <button class="ct-close" id="ct-close" aria-label="Close">×</button>
           <div class="ct-messages" id="ct-messages"></div>
           <div class="ct-input-wrap">
-            <textarea class="ct-input" id="ct-input" placeholder="Ask with page context (Enter to send, Shift+Enter for newline)"></textarea>
-            <div class="ct-controls">
-              <label class="ct-checkbox">
-                <input type="checkbox" id="ct-context" checked />
-                Include page context every turn
+            <div class="ct-settings">
+              <label class="ct-field">
+                <span>AIモデル</span>
+                <select class="ct-select" id="ct-model">
+                  <option value="">既定（自動）</option>
+                  <option value="gpt-5.2-codex">gpt-5.2-codex</option>
+                  <option value="gpt-5-codex">gpt-5-codex</option>
+                </select>
               </label>
-              <button class="ct-send" id="ct-send">Send</button>
+              <label class="ct-field">
+                <span>思考の量</span>
+                <select class="ct-select" id="ct-reasoning">
+                  <option value="low">low</option>
+                  <option value="medium" selected>medium</option>
+                  <option value="high">high</option>
+                </select>
+              </label>
+              <label class="ct-field">
+                <span>ページ読み込み</span>
+                <select class="ct-select" id="ct-page-context">
+                  <option value="on" selected>あり</option>
+                  <option value="off">なし</option>
+                </select>
+              </label>
+            </div>
+            <textarea class="ct-input" id="ct-input" placeholder="メッセージを入力（Enterで送信 / Shift+Enterで改行）"></textarea>
+            <div class="ct-controls">
+              <label class="ct-checkbox" id="ct-context-label">
+                <input type="checkbox" id="ct-context" checked />
+                毎ターンページ情報を含める
+              </label>
+              <button class="ct-send" id="ct-send">送信</button>
             </div>
           </div>
         </aside>
@@ -395,18 +420,38 @@
       backdrop: shadow.getElementById("ct-backdrop"),
       closeButton: shadow.getElementById("ct-close"),
       messages: shadow.getElementById("ct-messages"),
-      pageChip: shadow.getElementById("ct-page-chip"),
-      hostChip: shadow.getElementById("ct-host-chip"),
       input: shadow.getElementById("ct-input"),
       sendButton: shadow.getElementById("ct-send"),
-      contextCheckbox: shadow.getElementById("ct-context")
+      contextCheckbox: shadow.getElementById("ct-context"),
+      contextLabel: shadow.getElementById("ct-context-label"),
+      modelSelect: shadow.getElementById("ct-model"),
+      reasoningSelect: shadow.getElementById("ct-reasoning"),
+      pageContextSelect: shadow.getElementById("ct-page-context")
     };
 
     dom.backdrop.addEventListener("click", () => closeSidebar());
     dom.closeButton.addEventListener("click", () => closeSidebar());
     dom.sendButton.addEventListener("click", () => void sendMessage());
+
     dom.contextCheckbox.addEventListener("change", (event) => {
       state.includePageContextEachTurn = Boolean(event.target?.checked);
+      saveSettings();
+    });
+
+    dom.pageContextSelect.addEventListener("change", (event) => {
+      state.pageContextEnabled = String(event.target?.value || "on") !== "off";
+      applySettingsToDom();
+      saveSettings();
+    });
+
+    dom.modelSelect.addEventListener("change", (event) => {
+      state.selectedModel = normalizeModel(String(event.target?.value || ""));
+      saveSettings();
+    });
+
+    dom.reasoningSelect.addEventListener("change", (event) => {
+      state.reasoningEffort = normalizeReasoningEffort(String(event.target?.value || "medium"));
+      saveSettings();
     });
 
     dom.input.addEventListener("keydown", (event) => {
@@ -425,8 +470,8 @@
     state.dom = dom;
     state.mounted = true;
 
-    appendSystemMessage("Press Command+E to open/close this sidebar.");
-    refreshPageChip();
+    applySettingsToDom();
+    void loadSettings();
   }
 
   function toggleSidebar() {
@@ -445,8 +490,6 @@
     state.open = true;
     state.dom.shell.classList.add("open");
     state.dom.shell.setAttribute("aria-hidden", "false");
-    refreshPageChip();
-    void refreshHostStatus();
     state.dom.input.focus();
   }
 
@@ -458,37 +501,6 @@
     state.open = false;
     state.dom.shell.classList.remove("open");
     state.dom.shell.setAttribute("aria-hidden", "true");
-  }
-
-  async function refreshHostStatus() {
-    if (!state.dom) {
-      return;
-    }
-
-    state.dom.hostChip.textContent = "Host: checking...";
-    state.dom.hostChip.classList.remove("error");
-
-    const response = await chrome.runtime.sendMessage({ type: "CODEXTAB_PING" });
-
-    if (response?.ok) {
-      const version = response.version ? `, codex ${response.version}` : "";
-      state.dom.hostChip.textContent = `Host: connected${version}`;
-      state.dom.hostChip.classList.remove("error");
-      return;
-    }
-
-    state.dom.hostChip.textContent = `Host: ${response?.error ?? "not available"}`;
-    state.dom.hostChip.classList.add("error");
-  }
-
-  function refreshPageChip() {
-    if (!state.dom) {
-      return;
-    }
-
-    const context = getPageContext();
-    const title = truncate(context.title || "Untitled", 80);
-    state.dom.pageChip.textContent = `Page: ${title}`;
   }
 
   async function sendMessage() {
@@ -509,11 +521,9 @@
     state.dom.input.value = "";
 
     const pending = appendAssistantMessage("Thinking...", { pending: true });
-
-    const pageContext = getPageContext();
+    const includePageContext = state.pageContextEnabled && (!state.threadId || state.includePageContextEachTurn);
+    const pageContext = includePageContext ? getPageContext() : null;
     state.pageContext = pageContext;
-
-    const includePageContext = !state.threadId || state.includePageContextEachTurn;
 
     let response;
     try {
@@ -523,7 +533,9 @@
           message: text,
           threadId: state.threadId,
           pageContext,
-          includePageContext
+          includePageContext,
+          model: state.selectedModel || null,
+          reasoningEffort: state.reasoningEffort
         }
       });
     } catch (error) {
@@ -714,6 +726,70 @@
     });
   }
 
+  async function loadSettings() {
+    try {
+      const stored = await chrome.storage.local.get(SETTINGS_KEY);
+      const value = stored?.[SETTINGS_KEY];
+      if (!value || typeof value !== "object") {
+        return;
+      }
+
+      state.includePageContextEachTurn = Boolean(value.includePageContextEachTurn ?? DEFAULT_SETTINGS.includePageContextEachTurn);
+      state.pageContextEnabled = Boolean(value.pageContextEnabled ?? DEFAULT_SETTINGS.pageContextEnabled);
+      state.selectedModel = normalizeModel(String(value.selectedModel ?? DEFAULT_SETTINGS.selectedModel));
+      state.reasoningEffort = normalizeReasoningEffort(String(value.reasoningEffort ?? DEFAULT_SETTINGS.reasoningEffort));
+
+      applySettingsToDom();
+    } catch (_error) {
+      // ignore storage read errors
+    }
+  }
+
+  function saveSettings() {
+    try {
+      chrome.storage.local.set({
+        [SETTINGS_KEY]: {
+          includePageContextEachTurn: state.includePageContextEachTurn,
+          pageContextEnabled: state.pageContextEnabled,
+          selectedModel: state.selectedModel,
+          reasoningEffort: state.reasoningEffort
+        }
+      });
+    } catch (_error) {
+      // ignore storage write errors
+    }
+  }
+
+  function applySettingsToDom() {
+    if (!state.dom) {
+      return;
+    }
+
+    state.dom.contextCheckbox.checked = state.includePageContextEachTurn;
+    state.dom.contextCheckbox.disabled = !state.pageContextEnabled;
+    state.dom.contextLabel.classList.toggle("disabled", !state.pageContextEnabled);
+    state.dom.pageContextSelect.value = state.pageContextEnabled ? "on" : "off";
+
+    const modelValue = state.selectedModel || "";
+    const modelExists = Array.from(state.dom.modelSelect.options).some((option) => option.value === modelValue);
+    state.dom.modelSelect.value = modelExists ? modelValue : "";
+
+    state.dom.reasoningSelect.value = normalizeReasoningEffort(state.reasoningEffort);
+  }
+
+  function normalizeModel(value) {
+    const model = String(value || "").trim();
+    return model;
+  }
+
+  function normalizeReasoningEffort(value) {
+    const normalized = String(value || "medium").toLowerCase();
+    if (normalized === "low" || normalized === "high") {
+      return normalized;
+    }
+    return "medium";
+  }
+
   function renderMarkdown(markdownText) {
     const source = String(markdownText || "").replace(/\r\n?/g, "\n");
     const lines = source.split("\n");
@@ -849,7 +925,7 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 

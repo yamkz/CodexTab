@@ -6,7 +6,9 @@ Chromeで `Command+E` を押すと、右側にチャットサイドバーを開�
 ## 特徴
 
 - `Command+E` でサイドバーを開閉（macOS）
-- ページ文脈を自動で抽出して質問に添付
+- ページ文脈の読み込みを `あり/なし` で切替
+- AIモデル（`gpt-5.2-codex` / `gpt-5-codex` / 既定）を選択可能
+- 思考の量（`low` / `medium` / `high`）を選択可能
 - Codex CLI との会話を継続（thread resume）
 - 回答を Markdown でレンダリング表示
 - 回答を段階表示（読みやすさ重視）
@@ -60,7 +62,7 @@ cd CodexTab
 
 - `Shift+Enter` で改行
 - `Escape` でサイドバーを閉じる
-- `Include page context every turn` で毎ターン文脈添付を切替
+- `毎ターンページ情報を含める` で毎ターン文脈添付を切替
 
 ## プロジェクト構成
 

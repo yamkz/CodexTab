@@ -90,6 +90,8 @@ async function handleChat(message) {
   const includePageContext = Boolean(message?.includePageContext);
   const pageContext = normalizePageContext(message?.pageContext);
   const threadId = typeof message?.threadId === "string" && message.threadId.trim() ? message.threadId.trim() : null;
+  const model = normalizeModel(String(message?.model ?? ""));
+  const reasoningEffort = normalizeReasoningEffort(String(message?.reasoningEffort ?? ""));
 
   const prompt = buildPrompt({
     userMessage,
@@ -98,10 +100,7 @@ async function handleChat(message) {
     isResume: Boolean(threadId)
   });
 
-  const args = threadId
-    ? ["exec", "resume", "--json", "--skip-git-repo-check", threadId, prompt]
-    : ["exec", "--json", "--skip-git-repo-check", prompt];
-
+  const args = buildCodexArgs({ threadId, prompt, model, reasoningEffort });
   const result = await runCodexCommand(codexPath, args);
 
   if (!result.ok) {
@@ -121,6 +120,28 @@ async function handleChat(message) {
   };
 }
 
+function buildCodexArgs({ threadId, prompt, model, reasoningEffort }) {
+  const args = threadId
+    ? ["exec", "resume", "--json", "--skip-git-repo-check"]
+    : ["exec", "--json", "--skip-git-repo-check"];
+
+  if (model) {
+    args.push("-m", model);
+  }
+
+  if (reasoningEffort) {
+    args.push("-c", `model_reasoning_effort=${JSON.stringify(reasoningEffort)}`);
+  }
+
+  if (threadId) {
+    args.push(threadId, prompt);
+  } else {
+    args.push(prompt);
+  }
+
+  return args;
+}
+
 function buildPrompt({ userMessage, includePageContext, pageContext, isResume }) {
   const contextSection = includePageContext
     ? [
@@ -137,10 +158,14 @@ function buildPrompt({ userMessage, includePageContext, pageContext, isResume })
     : "";
 
   if (!isResume) {
+    const intro = ["You are Codex CLI assistant inside a Chrome sidebar."];
+    if (includePageContext) {
+      intro.push("Use the web page context to answer accurately.");
+      intro.push("If the page context is insufficient, ask a short follow-up question.");
+    }
+
     return [
-      "You are Codex CLI assistant inside a Chrome sidebar.",
-      "Use the web page context to answer accurately.",
-      "If the page context is insufficient, ask a short follow-up question.",
+      ...intro,
       contextSection,
       "[USER_MESSAGE]",
       userMessage,
@@ -179,6 +204,21 @@ function normalizePageContext(pageContext) {
   const text = truncate(String(pageContext.text || ""), 17000);
 
   return { title, url, selection, headings, text };
+}
+
+function normalizeModel(value) {
+  return String(value || "").trim();
+}
+
+function normalizeReasoningEffort(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "low" || normalized === "high") {
+    return normalized;
+  }
+  if (normalized === "medium") {
+    return normalized;
+  }
+  return "";
 }
 
 async function runCodexCommand(codexPath, args) {
