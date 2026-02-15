@@ -4,7 +4,8 @@
   const DEFAULT_SETTINGS = {
     pageContextEnabled: true,
     selectedModel: "",
-    reasoningEffort: "medium"
+    reasoningEffort: "medium",
+    panelWidth: 430
   };
 
   const state = {
@@ -17,6 +18,8 @@
     pageContextEnabled: DEFAULT_SETTINGS.pageContextEnabled,
     selectedModel: DEFAULT_SETTINGS.selectedModel,
     reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
+    panelWidth: DEFAULT_SETTINGS.panelWidth,
+    resizing: false,
     dom: null
   };
 
@@ -35,11 +38,7 @@
         return;
       }
 
-      if (eventIsFromSidebar(event)) {
-        return;
-      }
-
-      if (isEditableTarget(event.target)) {
+      if (isEditableTarget(event.target) && !eventIsFromSidebar(event)) {
         return;
       }
 
@@ -50,10 +49,6 @@
     },
     true
   );
-
-  window.addEventListener("keydown", trapSidebarKeyboardEvents, true);
-  window.addEventListener("keypress", trapSidebarKeyboardEvents, true);
-  window.addEventListener("keyup", trapSidebarKeyboardEvents, true);
 
   setInterval(() => {
     if (window.location.href === state.lastUrl) {
@@ -125,9 +120,29 @@
           transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease;
         }
 
+        .ct-shell.resizing .ct-panel,
+        .ct-shell.resizing .ct-backdrop {
+          transition: none;
+        }
+
+        .ct-shell.resizing * {
+          user-select: none;
+          cursor: ew-resize !important;
+        }
+
         .ct-shell.open .ct-panel {
           transform: translateX(0);
           opacity: 1;
+        }
+
+        .ct-resizer {
+          position: absolute;
+          left: -5px;
+          top: 0;
+          width: 10px;
+          height: 100%;
+          cursor: ew-resize;
+          z-index: 3;
         }
 
         .ct-close {
@@ -280,7 +295,7 @@
 
         .ct-input-wrap {
           padding: 12px;
-          border-top: 1px solid #2a2a31;
+          border-top: 0;
           background: #101012;
           overflow: hidden;
         }
@@ -393,7 +408,8 @@
 
       <div class="ct-shell" id="ct-shell" aria-hidden="true">
         <div class="ct-backdrop" id="ct-backdrop"></div>
-        <aside class="ct-panel" role="dialog" aria-label="CodexTab Chat Sidebar">
+        <aside class="ct-panel" id="ct-panel" role="dialog" aria-label="CodexTab Chat Sidebar">
+          <div class="ct-resizer" id="ct-resizer" aria-hidden="true"></div>
           <button class="ct-close" id="ct-close" aria-label="Close">×</button>
           <div class="ct-messages" id="ct-messages"></div>
           <div class="ct-input-wrap">
@@ -416,7 +432,7 @@
                     <option value="off">ページ: なし</option>
                   </select>
                 </div>
-                <button class="ct-send" id="ct-send">送信</button>
+                <button class="ct-send" id="ct-send">送信 ⌘↩</button>
               </div>
             </div>
           </div>
@@ -429,6 +445,8 @@
     const dom = {
       shell: shadow.getElementById("ct-shell"),
       backdrop: shadow.getElementById("ct-backdrop"),
+      panel: shadow.querySelector(".ct-panel"),
+      resizer: shadow.getElementById("ct-resizer"),
       closeButton: shadow.getElementById("ct-close"),
       messages: shadow.getElementById("ct-messages"),
       input: shadow.getElementById("ct-input"),
@@ -441,6 +459,10 @@
     dom.backdrop.addEventListener("click", () => closeSidebar());
     dom.closeButton.addEventListener("click", () => closeSidebar());
     dom.sendButton.addEventListener("click", () => void sendMessage());
+    dom.resizer.addEventListener("mousedown", beginResize);
+    dom.shell.addEventListener("keydown", trapSidebarKeyboardEvents);
+    dom.shell.addEventListener("keypress", trapSidebarKeyboardEvents);
+    dom.shell.addEventListener("keyup", trapSidebarKeyboardEvents);
 
     dom.pageContextSelect.addEventListener("change", (event) => {
       state.pageContextEnabled = String(event.target?.value || "on") !== "off";
@@ -462,6 +484,12 @@
       if (event.key === "Escape") {
         event.preventDefault();
         closeSidebar();
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        void sendMessage();
         return;
       }
 
@@ -494,6 +522,7 @@
     state.open = true;
     state.dom.shell.classList.add("open");
     state.dom.shell.setAttribute("aria-hidden", "false");
+    applyPanelWidth();
     state.dom.input.focus();
   }
 
@@ -741,6 +770,7 @@
       state.pageContextEnabled = Boolean(value.pageContextEnabled ?? DEFAULT_SETTINGS.pageContextEnabled);
       state.selectedModel = normalizeModel(String(value.selectedModel ?? DEFAULT_SETTINGS.selectedModel));
       state.reasoningEffort = normalizeReasoningEffort(String(value.reasoningEffort ?? DEFAULT_SETTINGS.reasoningEffort));
+      state.panelWidth = normalizePanelWidth(Number(value.panelWidth ?? DEFAULT_SETTINGS.panelWidth));
 
       applySettingsToDom();
     } catch (_error) {
@@ -754,7 +784,8 @@
         [SETTINGS_KEY]: {
           pageContextEnabled: state.pageContextEnabled,
           selectedModel: state.selectedModel,
-          reasoningEffort: state.reasoningEffort
+          reasoningEffort: state.reasoningEffort,
+          panelWidth: state.panelWidth
         }
       });
     } catch (_error) {
@@ -774,6 +805,7 @@
     state.dom.modelSelect.value = modelExists ? modelValue : "";
 
     state.dom.reasoningSelect.value = normalizeReasoningEffort(state.reasoningEffort);
+    applyPanelWidth();
   }
 
   function normalizeModel(value) {
@@ -787,6 +819,54 @@
       return normalized;
     }
     return "medium";
+  }
+
+  function normalizePanelWidth(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return DEFAULT_SETTINGS.panelWidth;
+    }
+
+    const minWidth = 320;
+    const maxWidth = Math.max(360, window.innerWidth - 8);
+    return Math.round(Math.min(maxWidth, Math.max(minWidth, numeric)));
+  }
+
+  function applyPanelWidth() {
+    if (!state.dom?.panel) {
+      return;
+    }
+    state.panelWidth = normalizePanelWidth(state.panelWidth);
+    state.dom.panel.style.width = `${state.panelWidth}px`;
+  }
+
+  function beginResize(event) {
+    if (!state.dom || !state.open || event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startWidth = state.panelWidth;
+    state.resizing = true;
+    state.dom.shell.classList.add("resizing");
+
+    const onMove = (moveEvent) => {
+      const delta = startX - moveEvent.clientX;
+      state.panelWidth = normalizePanelWidth(startWidth + delta);
+      applyPanelWidth();
+    };
+
+    const onUp = () => {
+      state.resizing = false;
+      state.dom.shell.classList.remove("resizing");
+      window.removeEventListener("mousemove", onMove, true);
+      window.removeEventListener("mouseup", onUp, true);
+      saveSettings();
+    };
+
+    window.addEventListener("mousemove", onMove, true);
+    window.addEventListener("mouseup", onUp, true);
   }
 
   function renderMarkdown(markdownText) {
